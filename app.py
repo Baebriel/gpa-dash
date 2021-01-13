@@ -68,7 +68,7 @@ SP21	AE 484 A	3.0	IP	>I
 SP21	FAA 102 A	3.0	IP	>I	'''
 
 
-def parseInput(text):
+def parse_input(text):
     """ takes raw input and returns dataframe of courses, including gpa and points columns """
 
     pattern = r"^(?P<semester>[A-Z]{2}[0-9]{2})\t(?P<department>[A-Z]{2,4}) (?P<number>[0-9\-]*).*(?P<hours>[0-9][.][" \
@@ -119,7 +119,7 @@ def parseInput(text):
 
 
 # no need to sort semesters because input is already sorted
-def sortSemesters(series):
+def sort_semesters(series):
     """ takes series of semesterly GPAs and sorts semesters by defined order """
 
     sort_order = [
@@ -148,8 +148,7 @@ def sortSemesters(series):
     return series_sorted
 
 
-def semestersFromDf(df):
-
+def semesters_from_df(df):
     # print(df)
 
     # get series of sums of hours and points columns of df
@@ -166,7 +165,7 @@ def semestersFromDf(df):
     return semesters
 
 
-def getCumulativeGPA(df):
+def get_cumulative_GPA(df):
     sums = df.groupby('semester', sort=False)[['hours', 'points']].sum()
     sums['gpa'] = np.floor(sums['points'] / sums['hours'] * 100) / 100
     sums['cum_pts'] = np.nan
@@ -188,18 +187,18 @@ def getCumulativeGPA(df):
     return sums
 
 
-def mainChart(text):
+def main_chart(text):
     # parse raw text
-    df = parseInput(text)
+    df = parse_input(text)
 
-    cumulative = getCumulativeGPA(df)
+    cumulative = get_cumulative_GPA(df)
 
     # create bar chart
     fig = px.bar(
         df,
-        x=semestersFromDf(df).index,
-        y=semestersFromDf(df).values,
-        text=semestersFromDf(df).values,
+        x=semesters_from_df(df).index,
+        y=semesters_from_df(df).values,
+        text=semesters_from_df(df).values,
     )
 
     # add cumulative gpa line
@@ -219,8 +218,8 @@ def mainChart(text):
     return fig
 
 
-def pieChart(text):
-    df = parseInput(text)
+def pie_chart(text):
+    df = parse_input(text)
 
     fig = px.pie(
         df,
@@ -234,11 +233,9 @@ def pieChart(text):
     return fig
 
 
-def bubbleChart(text):
-    df = parseInput(text)
-    cumulative = getCumulativeGPA(df)
-
-    print(cumulative)
+def bubble_chart(text):
+    df = parse_input(text)
+    cumulative = get_cumulative_GPA(df)
 
     fig = px.scatter(cumulative,
                      x=cumulative.index,
@@ -253,8 +250,7 @@ def bubbleChart(text):
     return fig
 
 
-bubbleChart(sample_text)
-
+bubble_chart(sample_text)
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -262,14 +258,30 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     html.H1("gpa-dash"),
+    html.Div([
+        html.B("Instructions:"),
+        html.Ol(children=[
+            html.Li(['Generate a degree audit through the ',
+                     html.A(
+                         "Degree Audi System",
+                         href="https://uachieve.apps.uillinois.edu/uachieve_uiuc/audit/create.html",
+                         target="_blank",
+                         rel="noopener noreferrer"
+                     ),
+                     ]),
+            html.Li('Scroll down to the "SUMMARY OF COURSES TAKEN" section'),
+            html.Li("Copy all text in the shaded area and paste it in the box below"),
+            html.Li('Hit "Submit" and enjoy')
+        ])
+    ]),
     dcc.Textarea(
         id="text-input",
         placeholder="enter course data here"
     ),
     html.Button(id='submit-button', n_clicks=0, children='Submit'),
-    dcc.Graph(figure=mainChart(sample_text), id='main-graph'),
-    dcc.Graph(figure=pieChart(sample_text), id='pie-chart'),
-    dcc.Graph(figure=bubbleChart(sample_text), id='bubble-chart')
+    dcc.Graph(figure=main_chart(sample_text), id='main-graph'),
+    dcc.Graph(figure=pie_chart(sample_text), id='pie-chart'),
+    dcc.Graph(figure=bubble_chart(sample_text), id='bubble-chart')
 ])
 
 
@@ -279,11 +291,11 @@ app.layout = html.Div([
     Output('bubble-chart', 'figure'),
     Input('submit-button', 'n_clicks'),
     State('text-input', 'value'))
-def update_figure(n_clicks, text):
+def update_figures(n_clicks, text):
     if text is None:
-        return mainChart(sample_text), pieChart(sample_text), bubbleChart(sample_text)
+        return main_chart(sample_text), pie_chart(sample_text), bubble_chart(sample_text)
     else:
-        return mainChart(text), pieChart(text), bubbleChart(text)
+        return main_chart(text), pie_chart(text), bubble_chart(text)
 
 
 if __name__ == '__main__':
