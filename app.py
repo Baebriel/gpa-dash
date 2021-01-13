@@ -11,7 +11,7 @@ import numpy as np
 import plotly.express as px
 
 sample_text = '''FA17	AE 100 A	2.0	A		
-FA17	AE 199 CD2	2.0	F	>R	
+FA17	AE 199 CD2	2.0	A	>R	
 FA17	AVI 101	3.0	TR		
 PARKLAND: AVI 101
 FA17	BADM 1-- 7	3.0	PS		
@@ -166,17 +166,49 @@ def semestersFromDf(df):
     return semesters
 
 
-def drawButtonHandler(text):
+def getCumulativeGPA(df):
+    sums = df.groupby('semester', sort=False)[['hours', 'points']].sum()
+    sums['gpa'] = np.floor(sums['points'] / sums['hours'] * 100) / 100
+    sums['cum_pts'] = np.nan
+    sums['cum_hrs'] = np.nan
+    sums['cumulative'] = np.nan
+
+    cum_pts = 0
+    cum_hrs = 0
+    for index, row in sums.iterrows():
+        row['cum_pts'] = cum_pts + row['points']
+        row['cum_hrs'] = cum_hrs + row['hours']
+        cum_pts += row['points']
+        cum_hrs += row['hours']
+
+        row['cumulative'] = np.floor(row['cum_pts'] / row['cum_hrs'] * 100) / 100
+
+    sums = sums.drop(columns=['cum_pts', 'cum_hrs'])
+
+    return sums
+
+
+def mainChart(text):
     # parse raw text
     df = parseInput(text)
 
-    # create bar chart and change axis labels
+    cumulative = getCumulativeGPA(df)
+
+    # create bar chart
     fig = px.bar(
         df,
         x=semestersFromDf(df).index,
         y=semestersFromDf(df).values,
         text=semestersFromDf(df).values,
     )
+
+    # add cumulative gpa line
+    fig.add_scatter(
+        x=cumulative.index,
+        y=cumulative.cumulative
+    )
+
+    # add axis lables
     fig.update_layout(
         xaxis_title="Semester",
         yaxis_title="GPA",
@@ -208,7 +240,7 @@ app.layout = html.Div([
         placeholder="enter course data here"
     ),
     html.Button(id='submit-button', n_clicks=0, children='Submit'),
-    dcc.Graph(figure=drawButtonHandler(sample_text), id='main-graph'),
+    dcc.Graph(figure=mainChart(sample_text), id='main-graph'),
     dcc.Graph(figure=pieChart(sample_text), id='pie-chart')
 ])
 
@@ -220,9 +252,9 @@ app.layout = html.Div([
     State('text-input', 'value'))
 def update_figure(n_clicks, text):
     if text is None:
-        return drawButtonHandler(sample_text), pieChart(sample_text)
+        return mainChart(sample_text), pieChart(sample_text)
     else:
-        return drawButtonHandler(text), pieChart(text)
+        return mainChart(text), pieChart(text)
 
 
 if __name__ == '__main__':
