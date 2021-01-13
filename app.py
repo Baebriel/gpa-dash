@@ -205,13 +205,15 @@ def mainChart(text):
     # add cumulative gpa line
     fig.add_scatter(
         x=cumulative.index,
-        y=cumulative.cumulative
+        y=cumulative.cumulative,
+        name="Cumulative GPA"
     )
 
     # add axis lables
     fig.update_layout(
         xaxis_title="Semester",
         yaxis_title="GPA",
+        title={'text': "GPA over time"},
     )
 
     return fig
@@ -225,8 +227,33 @@ def pieChart(text):
         values=df['department'].value_counts().values,
         names=df['department'].value_counts().index
     )
+    fig.update_layout(
+        title={'text': "Department distribution"}
+    )
 
     return fig
+
+
+def bubbleChart(text):
+    df = parseInput(text)
+    cumulative = getCumulativeGPA(df)
+
+    print(cumulative)
+
+    fig = px.scatter(cumulative,
+                     x=cumulative.index,
+                     y=cumulative.gpa,
+                     size="hours",
+                     size_max=30)
+    fig.update_yaxes(range=[0, 4])
+    fig.update_layout(
+        title={'text': "GPA with credit hours"}
+    )
+
+    return fig
+
+
+bubbleChart(sample_text)
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -234,27 +261,29 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
-    html.H1("GPAViz"),
+    html.H1("gpa-dash"),
     dcc.Textarea(
         id="text-input",
         placeholder="enter course data here"
     ),
     html.Button(id='submit-button', n_clicks=0, children='Submit'),
     dcc.Graph(figure=mainChart(sample_text), id='main-graph'),
-    dcc.Graph(figure=pieChart(sample_text), id='pie-chart')
+    dcc.Graph(figure=pieChart(sample_text), id='pie-chart'),
+    dcc.Graph(figure=bubbleChart(sample_text), id='bubble-chart')
 ])
 
 
 @app.callback(
     Output('main-graph', 'figure'),
     Output('pie-chart', 'figure'),
+    Output('bubble-chart', 'figure'),
     Input('submit-button', 'n_clicks'),
     State('text-input', 'value'))
 def update_figure(n_clicks, text):
     if text is None:
-        return mainChart(sample_text), pieChart(sample_text)
+        return mainChart(sample_text), pieChart(sample_text), bubbleChart(sample_text)
     else:
-        return mainChart(text), pieChart(text)
+        return mainChart(text), pieChart(text), bubbleChart(text)
 
 
 if __name__ == '__main__':
