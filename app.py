@@ -242,7 +242,8 @@ def bubble_chart(text):
                      y=cumulative.gpa,
                      size="hours",
                      size_max=30)
-    fig.update_yaxes(range=[0, 4])
+    fig.update_yaxes(range=[0, 4.5])
+    fig.add_hline(y=4)
     fig.update_layout(
         title={'text': "GPA with credit hours"}
     )
