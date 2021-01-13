@@ -1,3 +1,4 @@
+import os
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -251,8 +252,8 @@ def bubble_chart(text):
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
 server = app.server
+server.secret_key = os.environ.get('SECRET_KEY', 'my-secret-key')
 
 app.layout = html.Div([
     html.H1("gpa-dash"),
