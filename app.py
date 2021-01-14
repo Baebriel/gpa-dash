@@ -8,6 +8,41 @@ import re
 import numpy as np
 import plotly.express as px
 
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+server.secret_key = os.environ.get('SECRET_KEY', 'my-secret-key')
+
+app.index_string = '''<!DOCTYPE html>
+<html>
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5KTQ0HZ3VN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5KTQ0HZ3VN');
+</script>
+  <!-- End Global Google Analytics -->
+{%metas%}
+<title>{%title%}</title>
+{%favicon%}
+{%css%}
+</head>
+<body>
+{%app_entry%}
+<footer>
+{%config%}
+{%scripts%}
+{%renderer%}
+</footer>
+</body>
+</html>
+'''
+
 sample_text = '''FA17	AE 100 A	2.0	A		
 FA17	AE 199 CD2	2.0	A	>R	
 FA17	AVI 101	3.0	TR		
@@ -69,8 +104,7 @@ SP21	FAA 102 A	3.0	IP	>I	'''
 def parse_input(text):
     """ takes raw input and returns dataframe of courses, including gpa and points columns """
 
-    pattern = r"^(?P<semester>[A-Z]{2}[0-9]{2})\t(?P<department>[A-Z]{2,4}) (?P<number>[0-9\-]*).*(?P<hours>[0-9][.][" \
-              r"0-9])\t(?P<grade>[ABCDF]([+|-]|\t))"
+    pattern = r"^(?P<semester>[A-Z]{2}[0-9]{2})\t(?P<department>[A-Z]{2,4}) (?P<number>[0-9\-]*).*(?P<hours>[0-9][.][0-9])\t(?P<grade>[ABCDF]([+|-]|\t|$))"
 
     lines = text.splitlines()
 
@@ -112,6 +146,8 @@ def parse_input(text):
     for index, row in df.iterrows():
         df.loc[index, 'gpa'] = grade_to_gpa[row['grade']]
         df.loc[index, 'points'] = df.loc[index, 'hours'] * df.loc[index, 'gpa']
+
+    print(df)
 
     return df
 
@@ -241,48 +277,13 @@ def bubble_chart(text):
                      size="hours",
                      size_max=30)
     fig.update_yaxes(range=[0, 4.5])
-    fig.add_hline(y=4)
+    fig.add_hline(y=4, opacity=0.2)
     fig.update_layout(
         title={'text': "GPA with credit hours"}
     )
 
     return fig
 
-
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-server.secret_key = os.environ.get('SECRET_KEY', 'my-secret-key')
-
-app.index_string = '''<!DOCTYPE html>
-<html>
-<head>
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-5KTQ0HZ3VN"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-5KTQ0HZ3VN');
-</script>
-  <!-- End Global Google Analytics -->
-{%metas%}
-<title>{%title%}</title>
-{%favicon%}
-{%css%}
-</head>
-<body>
-{%app_entry%}
-<footer>
-{%config%}
-{%scripts%}
-{%renderer%}
-</footer>
-</body>
-</html>
-'''
 
 app.layout = html.Div([
     html.H1("gpa-dash"),
