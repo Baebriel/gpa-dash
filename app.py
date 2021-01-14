@@ -255,6 +255,35 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 server.secret_key = os.environ.get('SECRET_KEY', 'my-secret-key')
 
+app.index_string = '''<!DOCTYPE html>
+<html>
+<head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5KTQ0HZ3VN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5KTQ0HZ3VN');
+</script>
+  <!-- End Global Google Analytics -->
+{%metas%}
+<title>{%title%}</title>
+{%favicon%}
+{%css%}
+</head>
+<body>
+{%app_entry%}
+<footer>
+{%config%}
+{%scripts%}
+{%renderer%}
+</footer>
+</body>
+</html>
+'''
+
 app.layout = html.Div([
     html.H1("gpa-dash"),
     html.Div([
