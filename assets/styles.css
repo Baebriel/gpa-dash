@@ -1,0 +1,20 @@
+h1 {
+    background: aqua;
+}
+
+#instructions {
+    background: antiquewhite;
+}
+
+#instructions-and-input {
+    background: darkgrey;
+    width: max-content;
+}
+
+#text-input {
+    width: 300px;
+}
+
+#graphs {
+    border: 2px solid black;
+}

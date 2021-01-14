@@ -147,8 +147,6 @@ def parse_input(text):
         df.loc[index, 'gpa'] = grade_to_gpa[row['grade']]
         df.loc[index, 'points'] = df.loc[index, 'hours'] * df.loc[index, 'gpa']
 
-    print(df)
-
     return df
 
 
@@ -183,20 +181,30 @@ def sort_semesters(series):
 
 
 def semesters_from_df(df):
-    # print(df)
+    print(df)
 
-    # get series of sums of hours and points columns of df
+    # get df of sums of hours and points columns of df
     sums = df.groupby('semester', sort=False)[['hours', 'points']].sum()
 
-    # print(sums)
-
     # get series of GPAs for each semester
+    sums['gpa'] = np.floor(sums['points'] / sums['hours'] * 100) / 100
     semesters = np.floor(sums['points'] / sums['hours'] * 100) / 100
 
+    # print('semesters')
     # print(semesters)
 
-    # sort series in chronological order
-    return semesters
+    # add courses column showing all courses taken that semester
+    sums['courses'] = "<br>"
+    # iterate through columns of sums
+    for index1, row1 in sums.iterrows():
+        # iterate through columns of df
+        for index2, row2 in df.iterrows():
+            if index1 == row2['semester']:
+                sums.loc[index1, 'courses'] += df.loc[index2, 'department'] + ' ' + df.loc[index2, 'number'] + '<br>'
+
+    print(sums)
+
+    return sums
 
 
 def get_cumulative_GPA(df):
@@ -221,6 +229,20 @@ def get_cumulative_GPA(df):
     return sums
 
 
+def main_hover_template(df, x):
+    text = ""
+
+    x = 'FA17'
+    condition = df['semester'] == x
+
+    for index, row in df[condition].iterrows():
+        text += row['department'] + ' ' + row['number'] + ': ' + row['grade'] + '<br>'
+
+    print(text)
+
+    return text
+
+
 def main_chart(text):
     # parse raw text
     df = parse_input(text)
@@ -229,10 +251,15 @@ def main_chart(text):
 
     # create bar chart
     fig = px.bar(
-        df,
-        x=semesters_from_df(df).index,
-        y=semesters_from_df(df).values,
-        text=semesters_from_df(df).values,
+        semesters_from_df(df),
+        x=list(semesters_from_df(df).index),
+        y=semesters_from_df(df).gpa,
+        text=semesters_from_df(df).gpa,
+        hover_data=['courses'],
+        labels={
+            'x': 'Semester',
+            'y': 'GPA',
+        }
     )
 
     # add cumulative gpa line
@@ -242,7 +269,7 @@ def main_chart(text):
         name="Cumulative GPA"
     )
 
-    # add axis lables
+    # add axis labels
     fig.update_layout(
         xaxis_title="Semester",
         yaxis_title="GPA",
@@ -288,30 +315,34 @@ def bubble_chart(text):
 app.layout = html.Div([
     html.H1("gpa-dash"),
     html.Div([
-        html.B("Instructions:"),
-        html.Ol(children=[
-            html.Li(['Generate a degree audit through the ',
-                     html.A(
-                         "Degree Audi System",
-                         href="https://uachieve.apps.uillinois.edu/uachieve_uiuc/audit/create.html",
-                         target="_blank",
-                         rel="noopener noreferrer"
-                     ),
-                     ]),
-            html.Li('Scroll down to the "SUMMARY OF COURSES TAKEN" section'),
-            html.Li("Copy all text in the shaded area and paste it in the box below"),
-            html.Li('Hit "Submit" and enjoy')
-        ])
-    ]),
-    dcc.Textarea(
-        id="text-input",
-        placeholder="enter course data here"
-    ),
-    html.Button(id='submit-button', n_clicks=0, children='Submit'),
-    dcc.Graph(figure=main_chart(sample_text), id='main-graph'),
-    dcc.Graph(figure=pie_chart(sample_text), id='pie-chart'),
-    dcc.Graph(figure=bubble_chart(sample_text), id='bubble-chart')
-])
+        html.Div([
+            html.B("Instructions:"),
+            html.Ol(children=[
+                html.Li(['Generate a degree audit through the ',
+                         html.A(
+                             "Degree Audi System",
+                             href="https://uachieve.apps.uillinois.edu/uachieve_uiuc/audit/create.html",
+                             target="_blank",
+                             rel="noopener noreferrer"
+                         ),
+                         ]),
+                html.Li('Scroll down to the "SUMMARY OF COURSES TAKEN" section'),
+                html.Li("Copy all text in the shaded area and paste it in the box below"),
+                html.Li('Hit "Submit" and enjoy')
+            ])
+        ], id='instructions'),
+        dcc.Textarea(
+            id="text-input",
+            placeholder="enter course data here"
+        ),
+        html.Button(id='submit-button', n_clicks=0, children='Submit')
+    ], id='instructions-and-input'),
+    html.Div([
+        dcc.Graph(figure=main_chart(sample_text), id='main-graph'),
+        dcc.Graph(figure=pie_chart(sample_text), id='pie-chart'),
+        dcc.Graph(figure=bubble_chart(sample_text), id='bubble-chart')
+    ], id='graphs')
+], id='main')
 
 
 @app.callback(
